@@ -52,8 +52,8 @@ def to_stochastic(selector_tuple):
 if __name__ == '__main__':
 
 	SAVE_DIR = 'run_res'
-	TEST = 'hc2'
-	ENVIRONMENT = 'laptop'
+	TEST = 'madelon2'
+	ENVIRONMENT = 'ganxis'
 	
 	# rand_seed = np.random.randint(1e9)
 	rand_seed = None
