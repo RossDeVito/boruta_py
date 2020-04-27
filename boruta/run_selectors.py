@@ -947,7 +947,82 @@ if __name__ == '__main__':
 		),
 	]
 
-	selectors = selectors_bb
+	selectors_bbl = [
+		(	{
+				'name': 'batch_large_mix_nonauto',
+				'batch': True,
+				'underlying_model': 'Both',
+				'model_class': 'Batch Boruta Large Mix'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=4, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=6, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=4, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=6, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=4, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=6, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=4, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=6, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators=[100] * 12 + [1000] * 12,
+				two_step=False,
+				max_iter=150,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_large_mix_auto',
+				'batch': True,
+				'underlying_model': 'Both',
+				'model_class': 'Batch Boruta Large Mix'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=4, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=6, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=4, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=6, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1),
+				], 
+				n_estimators='auto',
+				two_step=False,
+				max_iter=150,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+	]
+
+	selectors = selectors_bbl
 
 	for test in TESTS:
 

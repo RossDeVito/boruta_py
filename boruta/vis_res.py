@@ -82,7 +82,7 @@ if __name__ == "__main__":
 				height=3,
 				facet_kws={
 					'margin_titles': True,
-					'sharey': "row"
+					'sharey': "none"
 				}, 
 				alpha=1, edgecolor=None,
 				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
@@ -169,7 +169,7 @@ if __name__ == "__main__":
 				height=3,
 				facet_kws={
 					'margin_titles': True,
-					'sharey': "row"
+					'sharey': "col"
 				}, 
 				alpha=1, edgecolor=None,
 				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
