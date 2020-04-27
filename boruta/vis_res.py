@@ -72,22 +72,18 @@ if __name__ == "__main__":
 		value_name='value'
 	)
 
-	# sns.set_style("ticks")
-
-	# g = sns.FacetGrid(melt_df, col='metric', row='test', hue='model_class',
-	# 	margin_titles=True)
-	# g = (g.map(plt.scatter, "time", "value",  alpha=.6)
-    #   		.add_legend())
-
 	sns.set_style('darkgrid') 
 
 	sns.relplot(x='time', y='value', hue='model_class', style='env', 
-				row='test', col='metric', data=melt_df, height=3,
+				row='test', col='metric', 
+				data=melt_df,#[melt_df.env == 'laptop'], 
+				height=3,
 				facet_kws={
-					'margin_titles': True
+					'margin_titles': True,
+					'sharey': "row"
 				}, 
 				alpha=1, edgecolor=None,
-				linewidth=2.0, markers=["$\u20DD$", "$\u002B$"]
+				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
 			)
 
 	plt.show()

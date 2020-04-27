@@ -52,13 +52,11 @@ def to_stochastic(selector_tuple):
 if __name__ == '__main__':
 
 	SAVE_DIR = 'run_res'
-	TEST = 'madelon2'
-	ENVIRONMENT = 'ganxis'
+	TESTS = ['hc2', 'madelon4', 'madelon2']
+	ENVIRONMENT = 'laptop'
 	
 	# rand_seed = np.random.randint(1e9)
 	rand_seed = None
-
-	X, y, feat_gt = get_test_data(TEST)
 	
 	selectors_rf = [
 		(	{
@@ -767,50 +765,238 @@ if __name__ == '__main__':
 
 	selectors_sgb = [to_stochastic(sel) for sel in selectors_gb]
 
-	selectors = selectors_rf + selectors_et
+	selectors_bb = [
+		(	{
+				'name': 'batch_rand_forest_auto',
+				'batch': True,
+				'underlying_model': 'Random Forest',
+				'model_class': 'Batch Boruta Random Forest'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators='auto',
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_rand_forest_100',
+				'batch': True,
+				'underlying_model': 'Random Forest',
+				'model_class': 'Batch Boruta Random Forest'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators=[100]*4,
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_rand_forest_1000',
+				'batch': True,
+				'underlying_model': 'Random Forest',
+				'model_class': 'Batch Boruta Random Forest'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators=[1000]*4,
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_extra_trees_auto',
+				'batch': True,
+				'underlying_model': 'Extra Trees',
+				'model_class': 'Batch Boruta Extra Trees'
+			},
+			TrackingBatchBorutaPy(
+				[
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators='auto',
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_extra_trees_100',
+				'batch': True,
+				'underlying_model': 'Extra Trees',
+				'model_class': 'Batch Boruta Extra Trees'
+			},
+			TrackingBatchBorutaPy(
+				[
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators=[100]*4,
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_extra_trees_1000',
+				'batch': True,
+				'underlying_model': 'Extra Trees',
+				'model_class': 'Batch Boruta Extra Trees'
+			},
+			TrackingBatchBorutaPy(
+				[
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=3, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1)
+				], 
+				n_estimators=[1000]*4,
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_mix_nonauto',
+				'batch': True,
+				'underlying_model': 'Both',
+				'model_class': 'Batch Boruta Mix'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1), 
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1),
+				], 
+				n_estimators=[100, 1000, 100, 100, 1000, 100],
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+		(	{
+				'name': 'batch_mix_auto',
+				'batch': True,
+				'underlying_model': 'Both',
+				'model_class': 'Batch Boruta Mix'
+			},
+			TrackingBatchBorutaPy(
+				[
+					RandomForestClassifier(verbose=0, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					RandomForestClassifier(verbose=0, max_depth=5, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, max_depth=7, n_jobs=-1),
+					ExtraTreesClassifier(verbose=0, n_jobs=-1),
+				], 
+				n_estimators='auto',
+				two_step=False,
+				max_iter=100,
+				mode='mp',
+				n_jobs=-1,
+				verbose=1,
+				random_state=rand_seed
+			)
+		),
+	]
 
-	for selector_data, selector in selectors:
+	selectors = selectors_bb
 
-		print("CURRENT SELECTOR:\n{}".format(selector_data))
+	for test in TESTS:
 
-		hist = selector.fit(X, y)
-		finish_time = int(time.time())
+		print("CURRENT TEST:\t{}".format(test))
 
-		jaccard = jaccard_score(feat_gt, selector.support_, pos_label=True)
-		precision = precision_score(feat_gt, selector.support_, pos_label=True)
-		recall = recall_score(feat_gt, selector.support_, pos_label=True)
-		f1 = f1_score(feat_gt, selector.support_, pos_label=True)
-		comp = completeness_score(feat_gt, selector.support_)
-		
-		useful_jaccards, useless_jaccards, times = get_jaccards(*hist, feat_gt)
+		X, y, feat_gt = get_test_data(test)
 
-		df = pd.DataFrame(
-			list(zip(times, useful_jaccards, useless_jaccards)),
-			columns=['time', 'jaccard_useful', 'jaccard_useless']
-		)
+		for selector_data, selector in selectors:
 
-		df['model_name'] = selector_data['name']
-		df['test'] = TEST
-		df['env'] = ENVIRONMENT
-		df['batch'] = selector_data['batch']
-		df['underlying_model'] = selector_data['underlying_model']
-		df['model_class'] = selector_data['model_class']
-		df['finish_time'] = finish_time
-		df['jaccard'] = jaccard
-		df['precision'] = precision
-		df['recall'] = recall
-		df['f1'] = f1
-		df['completeness'] = comp
+			print("CURRENT SELECTOR:\n{}".format(selector_data))
 
-		df.to_csv(
-			os.path.join(
-				SAVE_DIR,
-				'{}__{}__{}__{}.csv'.format(
-					selector_data['name'],
-					TEST,
-					ENVIRONMENT,
-					finish_time
-				)
-			),
-			index=False
-		)
+			hist = selector.fit(X, y)
+			finish_time = int(time.time())
+
+			jaccard = jaccard_score(feat_gt, selector.support_, pos_label=True)
+			precision = precision_score(feat_gt, selector.support_, pos_label=True)
+			recall = recall_score(feat_gt, selector.support_, pos_label=True)
+			f1 = f1_score(feat_gt, selector.support_, pos_label=True)
+			comp = completeness_score(feat_gt, selector.support_)
+			
+			useful_jaccards, useless_jaccards, times = get_jaccards(*hist, feat_gt)
+
+			df = pd.DataFrame(
+				list(zip(times, useful_jaccards, useless_jaccards)),
+				columns=['time', 'jaccard_useful', 'jaccard_useless']
+			)
+
+			df['model_name'] = selector_data['name']
+			df['test'] = test
+			df['env'] = ENVIRONMENT
+			df['batch'] = selector_data['batch']
+			df['underlying_model'] = selector_data['underlying_model']
+			df['model_class'] = selector_data['model_class']
+			df['finish_time'] = finish_time
+			df['jaccard'] = jaccard
+			df['precision'] = precision
+			df['recall'] = recall
+			df['f1'] = f1
+			df['completeness'] = comp
+
+			df.to_csv(
+				os.path.join(
+					SAVE_DIR,
+					'{}__{}__{}__{}.csv'.format(
+						selector_data['name'],
+						test,
+						ENVIRONMENT,
+						finish_time
+					)
+				),
+				index=False
+			)

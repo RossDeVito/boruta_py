@@ -1,0 +1,32 @@
+CURRENT TEST:	hc2
+CURRENT SELECTOR:
+{'name': 'batch_rand_forest_auto', 'batch': True, 'underlying_model': 'Random Forest', 'model_class': 'Batch Boruta Random Forest'}
+Iteration: 1 / 100
+Iteration: 2 / 100
+Iteration: 3 / 100
+Iteration: 4 / 100
+Iteration: 5 / 100
+Iteration: 6 / 100
+Iteration: 7 / 100
+Iteration: 8 / 100
+Iteration: 9 / 100
+Iteration: 10 / 100
+Iteration: 11 / 100
+Iteration: 12 / 100
+Iteration: 13 / 100
+Iteration: 14 / 100
+Iteration: 15 / 100
+Iteration: 16 / 100
+Iteration: 17 / 100
+Iteration: 18 / 100
+Iteration: 19 / 100
+Iteration: 20 / 100
+Iteration: 21 / 100
+Iteration: 22 / 100
+Iteration: 23 / 100
+Iteration: 24 / 100
+Iteration: 25 / 100
+Iteration: 26 / 100
+Iteration: 27 / 100
+Iteration: 28 / 100
+Iteration: 29 / 100

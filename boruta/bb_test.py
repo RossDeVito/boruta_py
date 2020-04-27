@@ -60,8 +60,7 @@ if __name__ == '__main__':
 	start = time.time()
 	bb_i = TrackingBatchBorutaPy(
 		[
-			RandomForestClassifier(verbose=0, n_jobs=-1), 
-			# GradientBoostingClassifier(verbose=1),
+			RandomForestClassifier(verbose=0, n_jobs=-1),
 			ExtraTreesClassifier(verbose=0, n_jobs=-1)
 		], 
 		n_estimators='auto',
