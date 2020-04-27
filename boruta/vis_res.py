@@ -48,8 +48,9 @@ if __name__ == "__main__":
 	]
 
 	to_best_df = to_best_df[
-		to_best_df['model_name'].isin(
-			to_best_df[to_best_df.test == 'hc2'].model_name.unique() 
+		(to_best_df.batch)
+		| (to_best_df['model_name'].isin(
+			to_best_df[to_best_df.test == 'hc2'].model_name.unique())
 		)
 	]
 
@@ -72,9 +73,11 @@ if __name__ == "__main__":
 		value_name='value'
 	)
 
-	sns.set_style('darkgrid') 
+	sns.set_style('darkgrid')
 
-	sns.relplot(x='time', y='value', hue='model_class', style='env', 
+	plt.figure(1) 
+
+	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
 				row='test', col='metric', 
 				data=melt_df,#[melt_df.env == 'laptop'], 
 				height=3,
@@ -86,37 +89,99 @@ if __name__ == "__main__":
 				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
 			)
 
+	plt.suptitle("Selection on 8-Core Laptop", x=.98, y=.99, ha='right')
 	plt.show()
+
+	plt.figure(2)
+
+	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
+				row='test', col='metric', 
+				data=melt_df[melt_df.env == 'ganxis'], 
+				height=3,
+				facet_kws={
+					'margin_titles': True,
+					'sharey': "row"
+				}, 
+				alpha=1, edgecolor=None,
+				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
+			)
+
+	plt.suptitle("Selection on 128-Core Server", x=.98, y=.99, ha='right')
+	plt.show()
+
+	# sns.relplot(x='time', y='value', hue='model_name', style='env', 
+	# 			row='test', col='metric', 
+	# 			data=melt_df,
+	# 			height=3,
+	# 			facet_kws={
+	# 				'margin_titles': True,
+	# 				'sharey': "row"
+	# 			}, 
+	# 			alpha=1, edgecolor=None,
+	# 			linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
+	# 		)
+
+	# plt.suptitle("Selection on Both", x=.98, y=.99, ha='right')
+	# plt.show()
+	# plt.close()
 
 	best = to_best_df.groupby('model_name').mean()  
 	best_u = best.sort_values('jaccard_useful', ascending=False)
 	best_l = best.sort_values('jaccard_useless', ascending=False) 
 	
 
+	max_df = max_df[
+		(max_df.test == 'hc2')
+		| (max_df.test == 'madelon2')
+		| (max_df.test == 'madelon4')
+	]
 
+	max_df = max_df[
+		(max_df.batch)
+		| (max_df['model_name'].isin(
+			max_df[max_df.test == 'hc2'].model_name.unique())
+		)
+	]
 
-	# melt_df = max_df.melt(
-	# 	id_vars = [
-	# 		'model_name',
-	# 		'finish_time',
-	# 		'test',
-	# 		'env',
-	# 		'batch',
-	# 		'underlying_model',
-	# 		'model_class',
-	# 		'time'
-	# 	],
-	# 	value_vars = [
-	# 		'jaccard',
-	# 		'precision',
-	# 		'recall',
-	# 		'f1',
-	# 		'completeness'
-	# 	],
-	# 	var_name='metric',
-	# 	value_name='value'
-	# )
+	melt_df = max_df.melt(
+		id_vars = [
+			'model_name',
+			'finish_time',
+			'test',
+			'env',
+			'batch',
+			'underlying_model',
+			'model_class',
+			'time'
+		],
+		value_vars = [
+			'jaccard',
+			'precision',
+			'recall',
+			'f1',
+			'completeness'
+		],
+		var_name='metric',
+		value_name='value'
+	)
+
+	plt.figure(3)
 	
+	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
+				row='test', col='metric', 
+				data=melt_df,
+				height=3,
+				facet_kws={
+					'margin_titles': True,
+					'sharey': "row"
+				}, 
+				alpha=1, edgecolor=None,
+				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
+			)
+
+	plt.suptitle("Performance Metrics", x=.98, y=.99, ha='right')
+	plt.show()
+
 	# g = sns.FacetGrid(melt_df, col='metric', row='test', hue='model_class')
 	# g = (g.map(plt.scatter, "time", "value",  alpha=.6)
     #   		.add_legend())
