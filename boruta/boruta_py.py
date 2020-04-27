@@ -9,6 +9,9 @@ License: BSD 3 clause
 """
 
 from __future__ import print_function, division
+import copy
+from multiprocessing import Pool
+from functools import partial
 import numpy as np
 import scipy as sp
 from sklearn.utils import check_random_state, check_X_y
@@ -174,7 +177,7 @@ class BorutaPy(BaseEstimator, TransformerMixin):
         Journal of Statistical Software, Vol. 36, Issue 11, Sep 2010
     """
 
-    def __init__(self, estimator, n_estimators=1000, perc=100, alpha=0.05,
+    def __init__(self, estimator, n_estimators='auto', perc=100, alpha=0.05,
                  two_step=True, max_iter=100, random_state=None, verbose=0):
         self.estimator = estimator
         self.n_estimators = n_estimators
@@ -571,3 +574,326 @@ class BorutaPy(BaseEstimator, TransformerMixin):
             result = '\n'.join([x[0] + '\t' + x[1] for x in zip(cols, content)])
             output = "\n\nBorutaPy finished running.\n\n" + result
         print(output)
+
+
+class BatchBorutaPy(BorutaPy, BaseEstimator, TransformerMixin):
+    """ 
+    Parallelized batch version of Boruta 
+
+    Parameters
+    ----------
+
+    estimators : list of objects
+        List of estimators, each with a 'fit' method that returns the 
+        feature_importances_ attribute. Important features must correspond to 
+        high absolute values in the feature_importances_.
+
+    n_estimators : (list of int) or (string), default = 1000
+        If list of int sets the number of estimators in the corresponding 
+        ensemble method in estimators by index. Must be same length as 
+        estimators.
+        If 'auto', each estimator's number of weak estimators is determined 
+        automatically based on the size of the dataset. The other parameters of
+        the used estimators need to be set with initialisation.
+
+        TODO:
+            will be int only to start
+
+    perc : int, default = 100
+        Instead of the max we use the percentile defined by the user, to pick
+        our threshold for comparison between shadow and real features. The max
+        tend to be too stringent. This provides a finer control over this. The
+        lower perc is the more false positives will be picked as relevant but
+        also the less relevant features will be left out. The usual trade-off.
+        The default is essentially the vanilla Boruta corresponding to the max.
+
+    alpha : float, default = 0.05
+        Level at which the corrected p-values will get rejected in both
+        correction steps.
+
+    two_step : Boolean, default = False
+        If you want to use the original implementation of Boruta with Bonferroni
+        correction only set this to False.
+
+    max_iter : int, default = 100
+        The number of maximum iterations to perform.
+
+    random_state : int, RandomState instance or None; default=None
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+
+    verbose : int, default=0
+        Controls verbosity of output:
+        - 0: no output
+        - 1: displays iteration number
+        - 2: which features have been selected already
+
+    mode : string, default=TODO
+        Controls how batch is run
+
+    Attributes
+    ----------
+
+    n_features_ : int
+        The number of selected features.
+
+    support_ : array of shape [n_features]
+
+        The mask of selected features - only confirmed ones are True.
+
+    support_weak_ : array of shape [n_features]
+
+        The mask of selected tentative features, which haven't gained enough
+        support during the max_iter number of iterations..
+
+    ranking_ : array of shape [n_features]
+
+        The feature ranking, such that ``ranking_[i]`` corresponds to the
+        ranking position of the i-th feature. Selected (i.e., estimated
+        best) features are assigned rank 1 and tentative features are assigned
+        rank 2.
+
+    """
+
+    def __init__(self, estimators, n_estimators=1000, perc=100, alpha=0.05,
+                 two_step=False, max_iter=100, random_state=None, verbose=0,
+                 mode='iterative', n_jobs=1):
+        self.estimators = estimators
+        self.n_estimators = n_estimators
+        self.perc = perc
+        self.alpha = alpha
+        self.two_step = two_step
+        self.max_iter = max_iter
+        self.random_state = check_random_state(random_state)
+        self.verbose = verbose
+        self.mode = mode
+        self.n_jobs = n_jobs
+
+    def _fit(self, X, y):
+        # check input params
+        self._check_params(X, y)
+
+        if not isinstance(X, np.ndarray):
+            X = self._validate_pandas_input(X) 
+        if not isinstance(y, np.ndarray):
+            y = self._validate_pandas_input(y)
+
+        # setup variables for Boruta
+        n_sample, n_feat = X.shape
+        _iter = 1
+        # holds the decision about each feature:
+        # 0  - default state = tentative in original code
+        # 1  - accepted in original code
+        # -1 - rejected in original code
+        dec_reg = np.zeros(n_feat, dtype=np.int)
+        # counts how many times a given feature was more important than
+        # the best of the shadow features
+        hit_reg = np.zeros(n_feat, dtype=np.int)
+        # these record the history of the iterations
+        imp_history = np.zeros(n_feat, dtype=np.float)
+        sha_max_history = []
+
+        # set n_estimators
+        if self.n_estimators != 'auto':
+            for estimator, n_tree in zip(self.estimators, self.n_estimators):
+                estimator.set_params(n_estimators=n_tree)
+
+        # main feature selection loop
+        while np.any(dec_reg == 0) and _iter < self.max_iter:
+            # find optimal number of trees and depth
+            if self.n_estimators == 'auto':
+                # number of features that aren't rejected
+                not_rejected = np.where(dec_reg >= 0)[0].shape[0]
+    
+                for estimator, n in zip(self.estimators, self.n_estimators):
+                    estimator.set_params(
+                        n_estimators=self._get_tree_num(not_rejected, estimator)
+                    )
+
+            # make sure we start with a new tree in each iteration
+            for estimator in self.estimators:
+                estimator.set_params(
+                    random_state=self.random_state.random_integers(1e9)
+                )
+
+            # add shadow attributes, shuffle them and train estimator, get imps
+            X_sha, x_cur_ind, x_cur_w = self._add_shadows(X, y, dec_reg)
+            cur_imp = self._get_imp(X_sha, y, dec_reg, n_feat, 
+                                    x_cur_ind, x_cur_w)
+
+            # get the threshold of shadow importances we will use for rejection
+            imp_sha_max = np.percentile(cur_imp[1], self.perc)
+
+            # record importance history
+            sha_max_history.append(imp_sha_max)
+            # print(sha_max_history)
+            # print(imp_history)
+            # print(cur_imp[0])
+            imp_history = np.vstack((imp_history, cur_imp[0]))
+
+            # register which feature is more imp than the max of shadows
+            hit_reg = self._assign_hits(hit_reg, cur_imp, imp_sha_max)
+
+            # based on hit_reg we check if a feature is doing better than
+            # expected by chance
+            dec_reg = self._do_tests(dec_reg, hit_reg, _iter)
+
+            # print out confirmed features
+            if self.verbose > 0 and _iter < self.max_iter:
+                self._print_results(dec_reg, _iter, 0)
+            if _iter < self.max_iter:
+                _iter += 1
+
+        # we automatically apply R package's rough fix for tentative ones
+        confirmed = np.where(dec_reg == 1)[0]
+        tentative = np.where(dec_reg == 0)[0]
+        # ignore the first row of zeros
+        tentative_median = np.median(imp_history[1:, tentative], axis=0)
+        # which tentative to keep
+        tentative_confirmed = np.where(tentative_median
+                                       > np.median(sha_max_history))[0]
+        tentative = tentative[tentative_confirmed]
+
+        # basic result variables
+        self.n_features_ = confirmed.shape[0]
+        self.support_ = np.zeros(n_feat, dtype=np.bool)
+        self.support_[confirmed] = 1
+        self.support_weak_ = np.zeros(n_feat, dtype=np.bool)
+        self.support_weak_[tentative] = 1
+
+        # ranking, confirmed variables are rank 1
+        self.ranking_ = np.ones(n_feat, dtype=np.int)
+        # tentative variables are rank 2
+        self.ranking_[tentative] = 2
+        # selected = confirmed and tentative
+        selected = np.hstack((confirmed, tentative))
+        # all rejected features are sorted by importance history
+        not_selected = np.setdiff1d(np.arange(n_feat), selected)
+        # large importance values should rank higher = lower ranks -> *(-1)
+        imp_history_rejected = imp_history[1:, not_selected] * -1
+
+        # update rank for not_selected features
+        if not_selected.shape[0] > 0:
+                # calculate ranks in each iteration, then median of ranks across feats
+                iter_ranks = self._nanrankdata(imp_history_rejected, axis=1)
+                rank_medians = np.nanmedian(iter_ranks, axis=0)
+                ranks = self._nanrankdata(rank_medians, axis=0)
+
+                # set smallest rank to 3 if there are tentative feats
+                if tentative.shape[0] > 0:
+                    ranks = ranks - np.min(ranks) + 3
+                else:
+                    # and 2 otherwise
+                    ranks = ranks - np.min(ranks) + 2
+                self.ranking_[not_selected] = ranks
+        else:
+            # all are selected, thus we set feature supports to True
+            self.support_ = np.ones(n_feat, dtype=np.bool)
+
+        # notify user
+        if self.verbose > 0:
+            self._print_results(dec_reg, _iter, 1)
+        return self
+
+
+    def _get_tree_num(self, n_feat, estimator):
+        depth = estimator.get_params()['max_depth']
+        if depth == None:
+            depth = 10
+        # how many times a feature should be considered on average
+        f_repr = 100
+        # n_feat * 2 because the training matrix is extended with n shadow features
+        multi = ((n_feat * 2) / (np.sqrt(n_feat * 2) * depth))
+        n_estimators = int(multi * f_repr)
+        return n_estimators
+
+
+    def _add_shadows(self, X, y, dec_reg):
+        """ 
+        Returns an X matrix that consists of the original features and the 
+        shuffled shaddow features, the currently considered feature indices,
+        and the number of currently considered features
+        """
+        # find features that are tentative still
+        x_cur_ind = np.where(dec_reg >= 0)[0]
+        x_cur = np.copy(X[:, x_cur_ind])
+        x_cur_w = x_cur.shape[1]
+
+        # deep copy the matrix for the shadow matrix
+        x_sha = np.copy(x_cur)
+
+        # make sure there's at least 5 columns in the shadow matrix for
+        while (x_sha.shape[1] < 5):
+            x_sha = np.hstack((x_sha, x_sha))
+
+        # shuffle xSha
+        x_sha = np.apply_along_axis(self._get_shuffle, 0, x_sha)
+
+        # get importance of the merged matrix
+        return np.hstack((x_cur, x_sha)), x_cur_ind, x_cur_w
+
+
+    def _get_imp(self, X, y, dec_reg, n_feat, x_cur_ind, x_cur_w):
+        """ Get importances or real and shaddow features """
+
+        if self.mode == 'iterative':
+            imp = self._get_imp_iterative(X, y)
+        elif self.mode == 'multiprocessing' or self.mode == 'mp':
+            imp = self._get_imp_mp(X, y)
+        else:
+            #TODO complete acceptable values
+            raise ValueError("mode must be 'iterative' or ...")
+
+        imp_sha = imp[x_cur_w:]
+        imp_real = np.zeros(n_feat)
+        imp_real[:] = np.nan
+        imp_real[x_cur_ind] = imp[:x_cur_w]
+        return imp_real, imp_sha
+
+
+    def _get_imp_iterative(self, X, y):
+        """ Iteratively gets average importance across all models """
+
+        all_imps = []
+
+        for estimator in self.estimators:
+            all_imps.append(self._fit_and_get_imp(estimator, X, y))
+
+        return np.stack(all_imps).mean(axis=0)
+
+
+    def _get_imp_mp(self, X, y):
+        """ 
+        Gets average importance across all models in parallel using 
+        multiprocessing library.
+        """
+
+        n_processes = self.n_jobs
+        if n_processes == -1:
+            n_processes = None
+
+        with Pool(processes=n_processes) as pool:
+            all_imps = list(
+                pool.map(
+                    partial(self._fit_and_get_imp, X=X, y=y),
+                    self.estimators
+                )
+            )
+
+        return np.stack(all_imps).mean(axis=0)
+
+
+    def _fit_and_get_imp(self, estimator, X, y):
+        """ Fits estimator and returns feature importances """
+        try:
+            estimator.fit(X, y)
+        except Exception as e:
+            raise ValueError('Please check your X and y variable. The provided '
+                                'estimator cannot be fitted to your data.\n' + str(e))
+        try:
+            return estimator.feature_importances_
+        except Exception:
+            raise ValueError('Only methods with feature_importance_ attribute '
+                                'are currently supported in BorutaPy.')
