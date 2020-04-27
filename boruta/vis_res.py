@@ -41,6 +41,17 @@ if __name__ == "__main__":
 		)
 
 	to_best_df = pd.DataFrame(to_best)
+	to_best_df = to_best_df[
+		(to_best_df.test == 'hc2')
+		| (to_best_df.test == 'madelon2')
+		| (to_best_df.test == 'madelon4')
+	]
+
+	to_best_df = to_best_df[
+		to_best_df['model_name'].isin(
+			to_best_df[to_best_df.test == 'hc2'].model_name.unique() 
+		)
+	]
 
 	melt_df = to_best_df.melt(
 		id_vars = [
@@ -72,7 +83,12 @@ if __name__ == "__main__":
 
 	sns.relplot(x='time', y='value', hue='model_class', style='env', 
 				row='test', col='metric', data=melt_df, height=3,
-				facet_kws={'margin_titles': True})
+				facet_kws={
+					'margin_titles': True
+				}, 
+				alpha=1, edgecolor=None,
+				linewidth=2.0, markers=["$\u20DD$", "$\u002B$"]
+			)
 
 	plt.show()
 
