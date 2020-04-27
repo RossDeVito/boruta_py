@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
 	max_df = selector_df.groupby(['model_name', 'finish_time']).max().reset_index()
 
-	last_df = selector_df.groupby(['test', 'model_name']).last().reset_index()
+	last_df = selector_df.groupby(['test', 'model_name', 'finish_time']).last().reset_index()
 
 	to_best = []
 
@@ -75,7 +75,6 @@ if __name__ == "__main__":
 
 	sns.set_style('darkgrid')
 
-	plt.figure(1) 
 
 	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
 				row='test', col='metric', 
@@ -92,7 +91,6 @@ if __name__ == "__main__":
 	plt.suptitle("Selection on 8-Core Laptop", x=.98, y=.99, ha='right')
 	plt.show()
 
-	plt.figure(2)
 
 	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
 				row='test', col='metric', 
@@ -100,7 +98,7 @@ if __name__ == "__main__":
 				height=3,
 				facet_kws={
 					'margin_titles': True,
-					'sharey': "row"
+					'sharey': "none"
 				}, 
 				alpha=1, edgecolor=None,
 				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
@@ -164,8 +162,6 @@ if __name__ == "__main__":
 		var_name='metric',
 		value_name='value'
 	)
-
-	plt.figure(3)
 	
 	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
 				row='test', col='metric', 
