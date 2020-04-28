@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
 	SAVE_DIR = 'run_res'
 	TESTS = ['hc2', 'madelon4', 'madelon2']
-	ENVIRONMENT = 'ganxis'
+	ENVIRONMENT = 'laptop'
 	
 	# rand_seed = np.random.randint(1e9)
 	rand_seed = None
@@ -1022,7 +1022,7 @@ if __name__ == '__main__':
 		),
 	]
 
-	selectors = selectors_bbl
+	selectors = selectors_rf + selectors_et + selectors_bb + selectors_bbl
 
 	for test in TESTS:
 

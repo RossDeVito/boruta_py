@@ -73,16 +73,18 @@ if __name__ == "__main__":
 		value_name='value'
 	)
 
+	melt_df_1 = melt_df
+
 	sns.set_style('darkgrid')
 
 
 	sns.relplot(x='time', y='value', hue='model_class', style='batch', 
 				row='test', col='metric', 
-				data=melt_df,#[melt_df.env == 'laptop'], 
+				data=melt_df[melt_df.env == 'laptop'], 
 				height=3,
 				facet_kws={
 					'margin_titles': True,
-					'sharey': "none"
+					# 'sharey': "none"
 				}, 
 				alpha=1, edgecolor=None,
 				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
@@ -98,7 +100,7 @@ if __name__ == "__main__":
 				height=3,
 				facet_kws={
 					'margin_titles': True,
-					'sharey': "none"
+					# 'sharey': "none"
 				}, 
 				alpha=1, edgecolor=None,
 				linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
@@ -106,22 +108,6 @@ if __name__ == "__main__":
 
 	plt.suptitle("Selection on 128-Core Server", x=.98, y=.99, ha='right')
 	plt.show()
-
-	# sns.relplot(x='time', y='value', hue='model_name', style='env', 
-	# 			row='test', col='metric', 
-	# 			data=melt_df,
-	# 			height=3,
-	# 			facet_kws={
-	# 				'margin_titles': True,
-	# 				'sharey': "row"
-	# 			}, 
-	# 			alpha=1, edgecolor=None,
-	# 			linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
-	# 		)
-
-	# plt.suptitle("Selection on Both", x=.98, y=.99, ha='right')
-	# plt.show()
-	# plt.close()
 
 	best = to_best_df.groupby('model_name').mean()  
 	best_u = best.sort_values('jaccard_useful', ascending=False)
@@ -153,9 +139,8 @@ if __name__ == "__main__":
 			'time'
 		],
 		value_vars = [
-			'jaccard',
-			'precision',
 			'recall',
+			'precision',
 			'f1',
 			'completeness'
 		],
@@ -178,8 +163,54 @@ if __name__ == "__main__":
 	plt.suptitle("Performance Metrics", x=.98, y=.99, ha='right')
 	plt.show()
 
-	# g = sns.FacetGrid(melt_df, col='metric', row='test', hue='model_class')
-	# g = (g.map(plt.scatter, "time", "value",  alpha=.6)
-    #   		.add_legend())
+	class_colors = [
+		sns.xkcd_rgb['golden yellow'],
+		sns.xkcd_rgb['pumpkin'],
+		# sns.xkcd_rgb['light red'],
+		sns.xkcd_rgb['pinkish red'],
+		sns.xkcd_rgb['crimson'],
+		sns.xkcd_rgb['neon purple'],
+		sns.xkcd_rgb['blue'],
+	]
+	sns.set_palette(class_colors)
 
+	# sns.relplot(x='time', y='value', hue='model_class', style='env', 
+	# 			row='test', col='metric', 
+	# 			data=melt_df.groupby(
+	# 					['model_class', 'test', 'metric', 'env']
+	# 				).mean().reset_index(),
+	# 			height=3,
+	# 			facet_kws={
+	# 				'margin_titles': True,
+	# 				'sharey': "col"
+	# 			}, 
+	# 			alpha=1, edgecolor=None,
+	# 			linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
+	# 		)
+
+	# plt.suptitle("Performance Metrics", x=.98, y=.99, ha='right')
 	# plt.show()
+
+	# sns.relplot(x='time', y='value', hue='model_class', style='env', 
+	# 			row='test', col='metric', 
+	# 			data=melt_df_1.groupby(
+	# 					['model_class', 'test', 'metric', 'env']
+	# 				).mean().reset_index(),
+	# 			height=3,
+	# 			facet_kws={
+	# 				'margin_titles': True,
+	# 				'sharey': "none"
+	# 			}, 
+	# 			alpha=1, edgecolor=None,
+	# 			linewidth=2.0, markers=["$\u20DD$", "$\u00D7$"]
+	# 		)
+
+	# plt.suptitle("Selection on Both", x=.98, y=.99, ha='right')
+	# plt.show()
+
+	perf = melt_df.groupby(			
+			['model_class', 'test', 'metric', 'env']
+		).mean().reset_index().groupby(
+			['test', 'metric', 'model_class', 'env']
+		).mean()
+	perf = perf.sort_values(['test', 'metric', 'value'], ascending=False)
